@@ -1,0 +1,31 @@
+{
+  "name": "drive-searcher",
+  "version": "1.0.0",
+  "description": "buscador de texto",
+  "main": "app.js",
+  "author": "librebeer",
+  "license": "GPL-2.0",
+  "bugs": {
+    "url": "https://github.com/librebeer/drive-searcher/issues"
+  },
+  "homepage": "https://github.com/librebeer/drive-searcher#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/librebeer/drive-searcher.git"
+  },
+  "scripts": {
+    "dev": "nodemon src/app.js --exec babel-node",
+    "build": "babel src --out-dir dist",
+    "start": "node dist/app.js"
+  },
+  "dependencies": {
+    "@babel/polyfill": "^7.6.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.6.4",
+    "@babel/core": "^7.6.4",
+    "@babel/node": "^7.6.3",
+    "@babel/preset-env": "^7.6.3",
+    "nodemon": "^1.19.4"
+  }
+}
