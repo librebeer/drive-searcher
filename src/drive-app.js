@@ -3,7 +3,7 @@ const readline = require('readline');
 const {google} = require('googleapis');
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly', 'https://www.googleapis.com/auth/spreadsheets.readonly'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -13,7 +13,7 @@ const TOKEN_PATH = 'token.json';
 fs.readFile('credentials.json', (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Drive API.
-  authorize(JSON.parse(content), listFiles);
+  authorize(JSON.parse(content), listMajors);
 });
 
 /**
@@ -73,7 +73,7 @@ function getAccessToken(oAuth2Client, callback) {
 function listFiles(auth) {
   const drive = google.drive({version: 'v3', auth});
   drive.files.list({
-    pageSize: 10,
+    pageSize: 5,
     fields: 'nextPageToken, files(id, name)',
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
@@ -85,6 +85,30 @@ function listFiles(auth) {
       });
     } else {
       console.log('No files found.');
+    }
+  });
+}
+
+/* siempre en columna E */
+/**
+ * Prints the names and majors of students in a sample spreadsheet:
+ * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
+ * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
+ */
+function listMajors(auth) {
+  const sheets = google.sheets({version: 'v4', auth});
+  sheets.spreadsheets.values.get({
+    spreadsheetId: '1DaxMjFWVbIje3DFOxkPOxDo6aTtVfviisbowSkI5jCg',
+    range: 'E2:E30',
+  }, (err, res) => {
+    if (err) return console.log('The API returned an error: ' + err);
+    const rows = res.data.values;
+    const text = "test";
+    if (rows.length) {
+      const founded = rows.findIndex((row) => row[0] == text);
+      console.log(`is on E${founded}`);
+    } else {
+      console.log('No data found.');
     }
   });
 }
