@@ -19,7 +19,8 @@
     "start": "node dist/app.js"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.6.0"
+    "@babel/polyfill": "^7.6.0",
+    "googleapis": "^39.2.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.6.4",
