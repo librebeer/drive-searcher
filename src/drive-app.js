@@ -1,19 +1,26 @@
-const fs = require('fs');
-const readline = require('readline');
-const {google} = require('googleapis');
+const fs = require("fs");
+const readline = require("readline");
+const { google } = require("googleapis");
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly', 'https://www.googleapis.com/auth/spreadsheets.readonly'];
+const SCOPES = [
+  "https://www.googleapis.com/auth/drive.metadata.readonly",
+  "https://www.googleapis.com/auth/spreadsheets.readonly",
+];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = 'token.json';
+const TOKEN_PATH = "token.json";
 
 // Load client secrets from a local file.
-fs.readFile('credentials.json', (err, content) => {
-  if (err) return console.log('Error loading client secret file:', err);
+fs.readFile("credentials.json", (err, content) => {
+  if (err) return console.log("Error loading client secret file:", err);
   // Authorize a client with credentials, then call the Google Drive API.
-  authorize(JSON.parse(content), (auth) => listFiles(auth).then(e => console.log(e)).catch(err => console.error(err)));
+  authorize(JSON.parse(content), auth =>
+    listFiles(auth)
+      .then(e => console.log(e))
+      .catch(err => console.error(err)),
+  );
 });
 
 /**
@@ -23,9 +30,12 @@ fs.readFile('credentials.json', (err, content) => {
  * @param {function} callback The callback to call with the authorized client.
  */
 function authorize(credentials, callback) {
-  const {client_secret, client_id, redirect_uris} = credentials.installed;
+  const { client_secret, client_id, redirect_uris } = credentials.installed;
   const oAuth2Client = new google.auth.OAuth2(
-      client_id, client_secret, redirect_uris[0]);
+    client_id,
+    client_secret,
+    redirect_uris[0],
+  );
 
   // Check if we have previously stored a token.
   fs.readFile(TOKEN_PATH, (err, token) => {
@@ -43,23 +53,23 @@ function authorize(credentials, callback) {
  */
 function getAccessToken(oAuth2Client, callback) {
   const authUrl = oAuth2Client.generateAuthUrl({
-    access_type: 'offline',
+    access_type: "offline",
     scope: SCOPES,
   });
-  console.log('Authorize this app by visiting this url:', authUrl);
+  console.log("Authorize this app by visiting this url:", authUrl);
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
-  rl.question('Enter the code from that page here: ', (code) => {
+  rl.question("Enter the code from that page here: ", code => {
     rl.close();
     oAuth2Client.getToken(code, (err, token) => {
-      if (err) return console.error('Error retrieving access token', err);
+      if (err) return console.error("Error retrieving access token", err);
       oAuth2Client.setCredentials(token);
       // Store the token to disk for later program executions
-      fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
+      fs.writeFile(TOKEN_PATH, JSON.stringify(token), err => {
         if (err) return console.error(err);
-        console.log('Token stored to', TOKEN_PATH);
+        console.log("Token stored to", TOKEN_PATH);
       });
       callback(oAuth2Client);
     });
@@ -70,26 +80,30 @@ function getAccessToken(oAuth2Client, callback) {
  * Lists the names and IDs of up to 10 files.
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  */
-const listFiles = auth => new Promise((resolve, reject) => {
-  const drive = google.drive({version: 'v3', auth});
-  drive.files.list({
-    pageSize: 3,
-    fields: 'nextPageToken, files(id, name)',
-  }, async (err, res) => {
-    if (err) return reject(err);
-    const files = res.data.files;
-    if (files.length) {
-      const data = await Promise.all(files.map(async file => {
-        const d = await listMajors(auth, file)
-        return d;
-      }))
-      resolve(data.join(''));
-    } else {
-      reject(new Error('No files found.'));
-    }
+const listFiles = auth =>
+  new Promise((resolve, reject) => {
+    const drive = google.drive({ version: "v3", auth });
+    drive.files
+      .list({
+        pageSize: 3,
+        fields: "nextPageToken, files(id, name)",
+      })
+      .then(async res => {
+        const files = res.data.files;
+        if (files.length) {
+          const data = await Promise.all(
+            files.map(async file => {
+              const d = await listMajors(auth, file);
+              return d;
+            }),
+          );
+          resolve(data.join(""));
+        } else {
+          reject(new Error("No files found."));
+        }
+      })
+      .catch(reject);
   });
-});
-
 
 /* siempre en columna E */
 /**
@@ -97,20 +111,22 @@ const listFiles = auth => new Promise((resolve, reject) => {
  * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
-const listMajors = async (auth, {id: spreadsheetId, name}) => new Promise((resolve, reject) => {
-  const sheets = google.sheets({version: 'v4', auth});
-  sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: 'E2:E30',
-  }, (err, res) => {
-    if (err) return resolve('');
-    const rows = res.data.values;
-    const text = "test";
-    if (rows.length) {
-      const founded = rows.findIndex((row) => row[0] == text);
-      if(founded > 0)
-        return resolve(`On ${name} is on E${founded}`);
-    } 
-    return reject('');
+const listMajors = async (auth, { id: spreadsheetId, name }) =>
+  new Promise((resolve, reject) => {
+    const sheets = google.sheets({ version: "v4", auth });
+    sheets.spreadsheets.values
+      .get({
+        spreadsheetId,
+        range: "E2:E30",
+      })
+      .then(res => {
+        const rows = res.data.values;
+        const text = "test";
+        if (rows.length) {
+          const founded = rows.findIndex(row => row[0] == text);
+          if (founded > 0) return resolve(`On ${name} is on E${founded}`);
+        }
+        return reject("");
+      })
+      .catch(err => resolve(""));
   });
-});
