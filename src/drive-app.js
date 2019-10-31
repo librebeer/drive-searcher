@@ -13,7 +13,7 @@ const TOKEN_PATH = 'token.json';
 fs.readFile('credentials.json', (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Drive API.
-  authorize(JSON.parse(content), listFiles);
+  authorize(JSON.parse(content), (auth) => listFiles(auth).then(e => console.log(e)).catch(err => console.error(err)));
 });
 
 /**
@@ -70,24 +70,26 @@ function getAccessToken(oAuth2Client, callback) {
  * Lists the names and IDs of up to 10 files.
  * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
  */
-function listFiles(auth) {
+const listFiles = auth => new Promise((resolve, reject) => {
   const drive = google.drive({version: 'v3', auth});
   drive.files.list({
-    pageSize: 5,
+    pageSize: 3,
     fields: 'nextPageToken, files(id, name)',
-  }, (err, res) => {
-    if (err) return console.log('The API returned an error: ' + err);
+  }, async (err, res) => {
+    if (err) return reject(err);
     const files = res.data.files;
     if (files.length) {
-      console.log('Files:');
-      files.map((file) => {
-        listMajors(auth, file.id);
-      });
+      const data = await Promise.all(files.map(async file => {
+        const d = await listMajors(auth, file)
+        return d;
+      }))
+      resolve(data.join(''));
     } else {
-      console.log('No files found.');
+      reject(new Error('No files found.'));
     }
   });
-}
+});
+
 
 /* siempre en columna E */
 /**
@@ -95,21 +97,20 @@ function listFiles(auth) {
  * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
-function listMajors(auth, spreadsheetId) {
+const listMajors = async (auth, {id: spreadsheetId, name}) => new Promise((resolve, reject) => {
   const sheets = google.sheets({version: 'v4', auth});
   sheets.spreadsheets.values.get({
     spreadsheetId,
     range: 'E2:E30',
   }, (err, res) => {
-    if (err) return console.log('The API returned an error: ' + err);
+    if (err) return resolve('');
     const rows = res.data.values;
     const text = "test";
     if (rows.length) {
       const founded = rows.findIndex((row) => row[0] == text);
       if(founded > 0)
-        console.log(`is on E${founded}`);
-    } else {
-      console.log('No data found.');
-    }
+        return resolve(`On ${name} is on E${founded}`);
+    } 
+    return reject('');
   });
-}
+});
