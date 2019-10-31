@@ -13,7 +13,7 @@ const TOKEN_PATH = 'token.json';
 fs.readFile('credentials.json', (err, content) => {
   if (err) return console.log('Error loading client secret file:', err);
   // Authorize a client with credentials, then call the Google Drive API.
-  authorize(JSON.parse(content), listMajors);
+  authorize(JSON.parse(content), listFiles);
 });
 
 /**
@@ -81,7 +81,7 @@ function listFiles(auth) {
     if (files.length) {
       console.log('Files:');
       files.map((file) => {
-        console.log(`${file.name} (${file.id})`);
+        listMajors(auth, file.id);
       });
     } else {
       console.log('No files found.');
@@ -95,10 +95,10 @@ function listFiles(auth) {
  * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
  * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
  */
-function listMajors(auth) {
+function listMajors(auth, spreadsheetId) {
   const sheets = google.sheets({version: 'v4', auth});
   sheets.spreadsheets.values.get({
-    spreadsheetId: '1DaxMjFWVbIje3DFOxkPOxDo6aTtVfviisbowSkI5jCg',
+    spreadsheetId,
     range: 'E2:E30',
   }, (err, res) => {
     if (err) return console.log('The API returned an error: ' + err);
@@ -106,7 +106,8 @@ function listMajors(auth) {
     const text = "test";
     if (rows.length) {
       const founded = rows.findIndex((row) => row[0] == text);
-      console.log(`is on E${founded}`);
+      if(founded > 0)
+        console.log(`is on E${founded}`);
     } else {
       console.log('No data found.');
     }
